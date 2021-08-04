@@ -1,7 +1,7 @@
 import "phaser";
-import desertMapJsonUrl from "../assets/maps/desert/desert.json";
-import isoTestTilesetUrl from "../assets/maps/desert/tileset.png";
-import waterTilesetUrl from "../assets/maps/desert/water.png";
+import desertMapJsonUrl from "./assets/maps/desert/desert.json";
+import isoTestTilesetUrl from "./assets/maps/desert/tileset.png";
+import waterTilesetUrl from "./assets/maps/desert/water.png";
 import { AnimatedTiles } from "./plugins/animated-tiles";
 
 export default class Demo extends Phaser.Scene {
