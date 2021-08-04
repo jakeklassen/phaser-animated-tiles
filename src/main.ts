@@ -1,4 +1,7 @@
 import "phaser";
+import desertMapJsonUrl from "../assets/maps/desert/desert.json";
+import isoTestTilesetUrl from "../assets/maps/desert/tileset.png";
+import waterTilesetUrl from "../assets/maps/desert/water.png";
 import { AnimatedTiles } from "./plugins/animated-tiles";
 
 export default class Demo extends Phaser.Scene {
@@ -10,9 +13,9 @@ export default class Demo extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("iso_test", "/assets/maps/desert/tileset.png");
-    this.load.image("water", "/assets/maps/desert/water.png");
-    this.load.tilemapTiledJSON("map", "/assets/maps/desert/desert.json");
+    this.load.image("iso_test", isoTestTilesetUrl);
+    this.load.image("water", waterTilesetUrl);
+    this.load.tilemapTiledJSON("map", desertMapJsonUrl);
   }
 
   create() {
