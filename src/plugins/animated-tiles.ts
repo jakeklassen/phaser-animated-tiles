@@ -74,7 +74,6 @@ export class AnimatedTiles extends Phaser.Plugins.ScenePlugin {
     pluginManager: Phaser.Plugins.PluginManager,
     pluginKey: string,
   ) {
-    console.log("AnimatedTiles contructor!");
     super(scene, pluginManager, pluginKey);
   }
 

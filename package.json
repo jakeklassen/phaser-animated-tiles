@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build --assetsInlineLimit 0",
+    "build": "tsc && vite build",
     "serve": "vite preview"
   },
   "devDependencies": {
@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "phaser": "^3.55.2",
-    "phaser-animated-tiles": "^2.0.2"
+    "phaser-animated-tiles": "^2.0.2",
+    "phaser-tiled-json-external-loader": "^0.1.1"
   }
 }

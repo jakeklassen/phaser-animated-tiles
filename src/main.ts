@@ -1,8 +1,11 @@
-import "phaser";
-import desertMapJsonUrl from "./assets/maps/desert/desert.json?url";
-import isoTestTilesetUrl from "./assets/maps/desert/tileset.png?url";
-import waterTilesetUrl from "./assets/maps/desert/water.png?url";
+import Phaser from "phaser";
+import registerTiledJSONExternalLoader from "phaser-tiled-json-external-loader";
+import desertMapJsonUrl from "./assets/maps/desert-external-tilesets/tilemap.json?url";
+import isoTestTilesetUrl from "./assets/maps/desert-external-tilesets/tileset.png?url";
+import waterTilesetUrl from "./assets/maps/desert-external-tilesets/water.png?url";
 import { AnimatedTiles } from "./plugins/animated-tiles";
+
+registerTiledJSONExternalLoader(Phaser);
 
 export default class Demo extends Phaser.Scene {
   controls?: Phaser.Cameras.Controls.FixedKeyControl;
@@ -15,14 +18,16 @@ export default class Demo extends Phaser.Scene {
   preload() {
     this.load.image("iso_test", isoTestTilesetUrl);
     this.load.image("water", waterTilesetUrl);
-    this.load.tilemapTiledJSON("map", desertMapJsonUrl);
+    // TODO fix this
+    // @ts-expect-error
+    this.load.tilemapTiledJSONExternal("map", desertMapJsonUrl);
   }
 
   create() {
     const map = this.make.tilemap({
       key: "map",
       tileWidth: 32,
-      tileHeight: 32,
+      tileHeight: 16,
       width: 100,
       height: 100,
     });
@@ -33,12 +38,15 @@ export default class Demo extends Phaser.Scene {
     map.createLayer("Tile Layer 1", [isoTileset, waterTileset]);
     map.createLayer("Tile Layer 2", [isoTileset, waterTileset]);
     map.createLayer("Tile Layer 3", [isoTileset, waterTileset]);
+    map.createLayer("Movement", [isoTileset, waterTileset]);
+    map.createLayer("Cursor", [isoTileset, waterTileset]);
+    map.createLayer("Character", [isoTileset, waterTileset]);
     map.createLayer("Props", [isoTileset, waterTileset]);
 
     this.animatedTiles.init(map);
 
     this.cameras.main.zoom = 2;
-    this.cameras.main.setScroll(400, 100);
+    this.cameras.main.centerOn(1050, 450);
 
     const cursors = this.input.keyboard.createCursorKeys();
     const controlConfig: Phaser.Types.Cameras.Controls.FixedKeyControlConfig = {
