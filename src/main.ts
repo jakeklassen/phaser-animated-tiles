@@ -1,5 +1,6 @@
-import Phaser from "phaser";
+import Phaser, { Tilemaps } from "phaser";
 import registerTiledJSONExternalLoader from "phaser-tiled-json-external-loader";
+// import desertMapEmbeddedTilesetsJsonUrl from "./assets/maps/desert/desert.json";
 import desertMapJsonUrl from "./assets/maps/desert-external-tilesets/tilemap.json?url";
 import isoTestTilesetUrl from "./assets/maps/desert-external-tilesets/tileset.png?url";
 import waterTilesetUrl from "./assets/maps/desert-external-tilesets/water.png?url";
@@ -8,7 +9,7 @@ import { AnimatedTiles } from "./plugins/animated-tiles";
 registerTiledJSONExternalLoader(Phaser);
 
 export default class Demo extends Phaser.Scene {
-  controls?: Phaser.Cameras.Controls.FixedKeyControl;
+  controls!: Phaser.Cameras.Controls.FixedKeyControl;
   animatedTiles!: AnimatedTiles;
 
   constructor() {
@@ -18,18 +19,13 @@ export default class Demo extends Phaser.Scene {
   preload() {
     this.load.image("iso_test", isoTestTilesetUrl);
     this.load.image("water", waterTilesetUrl);
-    // TODO fix this
-    // @ts-expect-error
-    this.load.tilemapTiledJSONExternal("map", desertMapJsonUrl);
+    this.load.tilemapTiledJSONExternal("tilemap", desertMapJsonUrl);
+    // this.load.tilemapTiledJSON("tilemap", desertMapEmbeddedTilesetsJsonUrl);
   }
 
   create() {
     const map = this.make.tilemap({
-      key: "map",
-      tileWidth: 32,
-      tileHeight: 16,
-      width: 100,
-      height: 100,
+      key: "tilemap",
     });
 
     const isoTileset = map.addTilesetImage("iso_test", "iso_test", 32, 32);
@@ -45,8 +41,78 @@ export default class Demo extends Phaser.Scene {
 
     this.animatedTiles.init(map);
 
+    console.log(map);
+    // @ts-expect-error
+    window.map = map;
+
+    /**
+     * https://github.com/photonstorm/phaser/issues/5644
+     */
+    // @ts-ignore
+    Tilemaps.TilemapLayer.prototype.putTileAt = function (
+      tile: number | Phaser.Tilemaps.Tile,
+      tileX: number,
+      tileY: number,
+      recalculateFaces?: boolean,
+    ) {
+      if (recalculateFaces === undefined) {
+        recalculateFaces = true;
+      }
+
+      if (
+        !Phaser.Tilemaps.Components.IsInLayerBounds(tileX, tileY, this.layer)
+      ) {
+        return null;
+      }
+
+      var oldTile = this.layer.data[tileY][tileX];
+      var oldTileCollides = oldTile && oldTile.collides;
+
+      if (tile instanceof Phaser.Tilemaps.Tile) {
+        this.layer.data[tileY][tileX] = new Phaser.Tilemaps.Tile(
+          this.layer,
+          tile.index,
+          tileX,
+          tileY,
+          tile.width,
+          tile.height,
+          this.layer.baseTileWidth,
+          this.layer.baseTileHeight,
+        );
+        this.layer.data[tileY][tileX].copy(tile);
+      } else {
+        var tileset = this.layer.tilemapLayer.gidMap[tile];
+        var index = tile;
+        this.layer.data[tileY][tileX] = new Phaser.Tilemaps.Tile(
+          this.layer,
+          index,
+          tileX,
+          tileY,
+          tileset.tileWidth,
+          tileset.tileHeight,
+          this.layer.baseTileWidth,
+          this.layer.baseTileHeight,
+        );
+      }
+
+      // Updating colliding flag on the new tile
+      var newTile = this.layer.data[tileY][tileX];
+      var collides = this.layer.collideIndexes.indexOf(newTile.index) !== -1;
+
+      Phaser.Tilemaps.Components.SetTileCollision(newTile, collides);
+
+      // Recalculate faces only if the colliding flag at (tileX, tileY) has changed
+      if (recalculateFaces && oldTileCollides !== newTile.collides) {
+        Phaser.Tilemaps.Components.CalculateFacesAt(tileX, tileY, this.layer);
+      }
+
+      return newTile;
+    };
+
+    map.getLayer("Tile Layer 1").tilemapLayer.putTileAt(23, 4, 4);
+
     this.cameras.main.zoom = 2;
-    this.cameras.main.centerOn(1050, 450);
+    this.cameras.main.centerOn(0, 200);
 
     const cursors = this.input.keyboard.createCursorKeys();
     const controlConfig: Phaser.Types.Cameras.Controls.FixedKeyControlConfig = {
@@ -61,8 +127,12 @@ export default class Demo extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number) {
-    this.controls?.update(delta);
+    if (!this.sys.isActive()) {
+      console.log("not active yet");
+      return;
+    }
 
+    this.controls.update(delta);
     this.animatedTiles.updateAnimatedTiles();
   }
 }

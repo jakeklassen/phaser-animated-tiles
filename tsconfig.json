@@ -9,11 +9,8 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "noEmit": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "typeRoots": ["@types"]
-  },
-  "include": ["./src"],
-  "exclude": ["./src/plugins/"]
+    "noImplicitReturns": true
+  }
 }
