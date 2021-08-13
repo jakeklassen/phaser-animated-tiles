@@ -72,7 +72,20 @@ const generateMovementGrid = (
   return grid;
 };
 
-console.log(generateMovementGrid(3, { x: 9, y: 9 }));
+// [
+//   [0, 0, 0, 1, 0, 0, 0],
+//   [0, 0, 1, 1, 1, 0, 0],
+//   [0, 1, 1, 1, 1, 1, 0],
+//   [1, 1, 1, 1, 1, 1, 1],
+//   [0, 1, 1, 1, 1, 1, 0],
+//   [0, 0, 1, 1, 1, 0, 0],
+//   [0, 0, 0, 1, 0, 0, 0],
+// ];
+console.table(
+  generateMovementGrid(3, { x: 9, y: 9 }).map((row) =>
+    row.map((position) => (Array.isArray(position) ? 1 : 0)),
+  ),
+);
 
 const getDirection = (
   t1: Pick<Position, "x" | "y">,
@@ -339,12 +352,13 @@ const determineMoveTiles = (
     unit.move,
     startingPosition,
   ).map((row) =>
+    // Truncate positions that fall off the map
     row
       .filter((value): value is number[] => Array.isArray(value))
       .filter(([x, y]) => x >= 0 && x < map.width && y >= 0 && y < map.height),
   );
 
-  console.log(unitMovementGrid);
+  console.table(unitMovementGrid);
 
   // const unitMovementGridFinalMapIntersect = [];
 
