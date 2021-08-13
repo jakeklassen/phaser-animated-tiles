@@ -26,5 +26,6 @@
     "phaser-animated-tiles": "^2.0.2",
     "phaser-tiled-json-external-loader": "^0.1.1",
     "type-fest": "^2.0.0"
-  }
+  },
+  "packageManager": "yarn@3.0.1-rc.2"
 }
