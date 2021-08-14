@@ -5,26 +5,48 @@ import { Merge } from "type-fest";
 import desertTileset from "./fixtures/desert_tileset.json";
 import moveTesting from "./fixtures/move_testing.json";
 
+type Tilemap = Merge<
+  typeof moveTesting,
+  {
+    tilesets: Array<
+      typeof moveTesting["tilesets"][number] & {
+        tileset: typeof desertTileset;
+      }
+    >;
+  }
+>;
+
+// For every tileset referenced, add a tileset property with the loaded
+// tileset file.
+for (const [tilesetIdx] of moveTesting.tilesets.entries()) {
+  const tileset = moveTesting.tilesets[tilesetIdx];
+  const tilesetPath = path.resolve(
+    path.join(
+      __dirname,
+      `./fixtures/`,
+      tileset.source.replace(".tsx", ".json"),
+    ),
+  );
+
+  (moveTesting as Tilemap).tilesets[tilesetIdx].tileset = require(tilesetPath);
+}
+
+const map: Tilemap = JSON.parse(JSON.stringify(moveTesting));
+
 /**
  * Generate 2d grid of `size` * `size` elements
  * @param size
  * @returns
  */
-const generateGrid = (size: number) => {
-  if (size <= 0) {
-    throw new Error("size must be a positive number");
-  }
-
-  if (Math.floor(size) !== size) {
-    throw new Error("size must be a positive nubmer");
-  }
+const generateGrid = (width: number, height: number) => {
+  // TODO width, height validation
 
   const grid: number[][] = [];
 
-  for (let y = 0; y < size * 2 + 1; y++) {
+  for (let y = 0; y < height; y++) {
     grid[y] = [];
 
-    for (let x = 0; x < size * 2 + 1; x++) {
+    for (let x = 0; x < width; x++) {
       grid[y][x] = 0;
     }
   }
@@ -43,9 +65,10 @@ const generateMovementGrid = (
   move: number,
   position: { x: number; y: number },
 ) => {
-  const grid: (number | number[])[][] = generateGrid(move);
+  const grid: (number | number[])[][] = generateGrid(map.width, map.height);
 
-  grid[move][move] = [position.x, position.y];
+  // TODO: validate position map bounds
+  grid[position.y][position.x] = [position.x, position.y];
 
   for (let y = 0; y <= move; ++y) {
     for (let x = 0; x <= move; ++x) {
@@ -53,14 +76,37 @@ const generateMovementGrid = (
         continue;
       }
 
-      grid[move][move - x] = [position.x - x, position.y];
-      grid[move][move + x] = [position.x + x, position.y];
-      grid[move - y][move] = [position.x, position.y - y];
-      grid[move + y][move] = [position.x, position.y + y];
-      grid[move - y][move - x] = [position.x - x, position.y - y];
-      grid[move + y][move + x] = [position.x + x, position.y + y];
-      grid[move - y][move + x] = [position.x + x, position.y - y];
-      grid[move + y][move - x] = [position.x - x, position.y + y];
+      if (grid[position.y]?.[position.x - x] != null) {
+        grid[position.y][position.x - x] = [position.x - x, position.y];
+      }
+
+      if (grid[position.y]?.[position.x + x] != null) {
+        grid[position.y][position.x + x] = [position.x + x, position.y];
+      }
+
+      if (grid[position.y - y]?.[position.x] != null) {
+        grid[position.y - y][position.x] = [position.x, position.y - y];
+      }
+
+      if (grid[position.y + y]?.[position.x] != null) {
+        grid[position.y + y][position.x] = [position.x, position.y + y];
+      }
+
+      if (grid[position.y - y]?.[position.x - x] != null) {
+        grid[position.y - y][position.x - x] = [position.x - x, position.y - y];
+      }
+
+      if (grid[position.y + y]?.[position.x + x] != null) {
+        grid[position.y + y][position.x + x] = [position.x + x, position.y + y];
+      }
+
+      if (grid[position.y - y]?.[position.x + x] != null) {
+        grid[position.y - y][position.x + x] = [position.x + x, position.y - y];
+      }
+
+      if (grid[position.y + y]?.[position.x - x] != null) {
+        grid[position.y + y][position.x - x] = [position.x - x, position.y + y];
+      }
     }
   }
 
@@ -77,10 +123,14 @@ const getAdjacentTiles = (
   const west = grid[relativeTo.y]?.[relativeTo.x - 1];
 
   return {
-    north: north ? { x: relativeTo.x, y: relativeTo.y - 1 } : undefined,
-    east: east ? { x: relativeTo.x + 1, y: relativeTo.y } : undefined,
-    south: south ? { x: relativeTo.x, y: relativeTo.y + 1 } : undefined,
-    west: west ? { x: relativeTo.x - 1, y: relativeTo.y } : undefined,
+    north:
+      north ?? 0 !== 0 ? { x: relativeTo.x, y: relativeTo.y - 1 } : undefined,
+    east:
+      east ?? 0 !== 0 ? { x: relativeTo.x + 1, y: relativeTo.y } : undefined,
+    south:
+      south ?? 0 !== 0 ? { x: relativeTo.x, y: relativeTo.y + 1 } : undefined,
+    west:
+      west ?? 0 !== 0 ? { x: relativeTo.x - 1, y: relativeTo.y } : undefined,
   };
 };
 
@@ -116,55 +166,10 @@ const getUniquePaths = (paths: { x: number; y: number }[][]) => {
 //   [0, 0, 0, 1, 0, 0, 0],
 // ];
 console.table(
-  generateMovementGrid(3, { x: 9, y: 9 }).map((row) =>
+  generateMovementGrid(3, { x: 8, y: 4 }).map((row) =>
     row.map((position) => (Array.isArray(position) ? 1 : "")),
   ),
 );
-
-enum Direction {
-  North = "north",
-  East = "east",
-  South = "south",
-  West = "west",
-}
-
-const getDirection = (
-  t1: Pick<Position, "x" | "y">,
-  t2: Pick<Position, "x" | "y">,
-): Direction => {
-  if (t1.y < t2.y) return Direction.South;
-  if (t1.x < t2.x) return Direction.East;
-  if (t1.y > t2.y) return Direction.North;
-  return Direction.West;
-};
-
-type Tilemap = Merge<
-  typeof moveTesting,
-  {
-    tilesets: Array<
-      typeof moveTesting["tilesets"][number] & {
-        tileset: typeof desertTileset;
-      }
-    >;
-  }
->;
-
-// For every tileset referenced, add a tileset property with the loaded
-// tileset file.
-for (const [tilesetIdx] of moveTesting.tilesets.entries()) {
-  const tileset = moveTesting.tilesets[tilesetIdx];
-  const tilesetPath = path.resolve(
-    path.join(
-      __dirname,
-      `./fixtures/`,
-      tileset.source.replace(".tsx", ".json"),
-    ),
-  );
-
-  (moveTesting as Tilemap).tilesets[tilesetIdx].tileset = require(tilesetPath);
-}
-
-const map: Tilemap = JSON.parse(JSON.stringify(moveTesting));
 
 const targetTileX = 5;
 const targetTileY = 9;
@@ -232,6 +237,22 @@ const aStarGrids = heightLayersWithGridIndices.map((layer) => {
     return { layerTileId: tileId, tile, tileHeight: heightProp.value };
   });
 
+  // Grid to map real x,y position to grid position too
+  const gridXY: typeof layerTileArray[] = [];
+
+  for (let row = 0; row < map.width; ++row) {
+    gridXY[row] = [];
+    const x = row;
+
+    for (let col = 0; col < map.height; ++col) {
+      const y = col;
+      const gridIdx = x + y * map.width;
+
+      gridXY[row][col] = layerTileArray[gridIdx];
+    }
+  }
+
+  // Grid using the more traditional y, x ordering
   const grid: typeof layerTileArray[] = [];
 
   for (let row = 0; row < map.height; ++row) {
@@ -249,27 +270,37 @@ const aStarGrids = heightLayersWithGridIndices.map((layer) => {
   return {
     ...layer,
     grid,
+    gridXY,
   };
 });
 
-console.log(aStarGrids[0].grid[9][5]);
-console.log(aStarGrids[1].grid[9][5]);
-console.log(aStarGrids[2].grid[9][5]);
-console.log(aStarGrids[3].grid[9][5]);
-console.log(aStarGrids[4].grid[9][5]);
-console.log(aStarGrids[5].grid[9][5]);
+// console.log(`
+// ==================================
+// grid XY 8, 3
+// ==================================`);
+console.log(aStarGrids[0].gridXY[8][3]);
+// console.log(aStarGrids[1].gridXY[8][3]);
+// console.log(aStarGrids[2].gridXY[8][3]);
+// console.log(aStarGrids[3].gridXY[8][3]);
+// console.log(aStarGrids[4].gridXY[8][3]);
+// console.log(aStarGrids[5].gridXY[8][3]);
 
-console.log(aStarGrids[0].grid[5][8]);
-console.log(aStarGrids[1].grid[5][8]);
-console.log(aStarGrids[2].grid[5][8]);
-console.log(aStarGrids[3].grid[5][8]);
-console.log(aStarGrids[4].grid[5][8]);
-console.log(aStarGrids[5].grid[5][8]);
+console.log(aStarGrids[0].grid[3][8]);
+// console.log(aStarGrids[1].grid[3][8]);
+// console.log(aStarGrids[2].grid[3][8]);
+// console.log(aStarGrids[3].grid[3][8]);
+// console.log(aStarGrids[4].grid[3][8]);
+// console.log(aStarGrids[5].grid[3][8]);
 
 const isColumnEmpty = (
   grid: typeof aStarGrids,
   position: { x: number; y: number },
 ) => grid.every((layer) => layer.grid[position.y][position.x] === 0);
+
+const isColumnEmptyXY = (
+  grid: typeof aStarGrids,
+  position: { x: number; y: number },
+) => grid.every((layer) => layer.gridXY[position.x][position.y] === 0);
 
 interface Unit {
   jump: number;
@@ -396,10 +427,6 @@ const determineMoveTiles = async (
     return walkNode(left, { ...unit, move: unit.move - 1 }, path.concat(left));
   };
 
-  console.log(startingPosition);
-
-  // return walkNode(startingPosition, unit);
-
   const unitMovementGrid = generateMovementGrid(
     unit.move,
     startingPosition,
@@ -428,54 +455,62 @@ const determineMoveTiles = async (
     }),
   );
 
+  console.log("generateMovementGrid");
+  console.table(generateMovementGrid(unit.move, startingPosition));
+
+  console.log("unitMovementGrid");
+  console.table(unitMovementGrid);
+
   const aStarMoveable = unitMovementGrid.map((row) =>
     row.map((cell) => (Array.isArray(cell) ? 1 : 0)),
   );
+
+  console.log("aStarMoveable");
+  console.table(aStarMoveable);
 
   const easystar = new EasyStar.js();
   easystar.setGrid(aStarMoveable);
   easystar.setAcceptableTiles([1]);
 
-  console.log(unitMovementGrid);
-
   const destinationPositions = unitMovementGrid
     .flat()
     .filter((value): value is number[] => Array.isArray(value))
-    .filter(
-      ([x, y]) => !(x === startingPosition.x && y === startingPosition.y),
-    );
+    .filter(([x, y]) => x !== startingPosition.x || y !== startingPosition.y);
+
+  console.log("destinationPositions");
+  console.table(destinationPositions);
 
   const paths = [];
 
-  for (const position of getAdjacentTilesAsArray(aStarMoveable, {
-    x: startingPosition.x - unit.move * 2,
-    y: startingPosition.y - unit.move * 2,
-  })) {
+  const mapFirstLayerGrid = aStarGrids[0].grid.map((row) =>
+    row.map((el) => (el === 0 ? 0 : 1)),
+  );
+
+  console.log("getAdjacentTiles");
+  console.log(getAdjacentTiles(mapFirstLayerGrid, startingPosition));
+
+  console.log("getAdjacentTilesAsArray");
+  console.log(getAdjacentTilesAsArray(mapFirstLayerGrid, startingPosition));
+
+  for (const position of getAdjacentTilesAsArray(
+    mapFirstLayerGrid,
+    startingPosition,
+  )) {
     console.log({
-      weightedPostition: {
-        x: position.x + unit.move * 2,
-        y: position.y + unit.move * 2,
-      },
+      weightedPostition: startingPosition,
     });
 
     easystar.setAdditionalPointCost(position.x, position.y, 2);
 
     for (const [x, y] of destinationPositions) {
-      console.log({
-        startX: startingPosition.x - unit.move * 2,
-        startY: startingPosition.y - unit.move * 2,
-        endX: x - unit.move * 2,
-        endY: y - unit.move * 2,
-      });
-
       try {
         const path = await new Promise<{ x: number; y: number }[]>(
           (resolve, reject) => {
             easystar.findPath(
-              startingPosition.x - unit.move * 2,
-              startingPosition.y - unit.move * 2,
-              x - unit.move * 2,
-              y - unit.move * 2,
+              startingPosition.x,
+              startingPosition.y,
+              x,
+              y,
               (path) => {
                 if (path == null) {
                   reject("No path found");
@@ -496,21 +531,11 @@ const determineMoveTiles = async (
           throw new Error("Error getting last position from path");
         }
 
-        if (
-          isColumnEmpty(aStarGrids, {
-            x: lastPosition.x + unit.move * 2,
-            y: lastPosition.y + unit.move * 2,
-          })
-        ) {
+        if (isColumnEmpty(aStarGrids, lastPosition)) {
           continue;
         }
 
-        paths.push(
-          path.map(({ x, y }) => ({
-            x: x + unit.move * 2,
-            y: y + unit.move * 2,
-          })),
-        );
+        paths.push(path);
       } catch (error) {
         console.error(error);
       }
@@ -524,34 +549,6 @@ const determineMoveTiles = async (
 
   const unitPaths = getUniquePaths(paths);
   console.log(unitPaths);
-
-  // const unitMovementGridFinalMapIntersect = [];
-
-  // for (let y = 0; y < unitMovementGrid.length; ++y) {
-  //   const row = unitMovementGrid[y];
-
-  //   for (let x = 0; x < row.length; ++x) {
-  //     if (Array.isArray(row[x]) === false) {
-  //       continue;
-  //     }
-
-  //     const position = row[x] as number[];
-
-  //     // Off the map?
-  //     if (
-  //       startingPosition.x + x > map.width ||
-  //       startingPosition.y + y > map.height ||
-  //       startingPosition.x + x < 0 ||
-  //       startingPosition.y + y < 0
-  //     ) {
-  //       continue;
-  //     }
-
-  //     unitMovementGridFinalMapIntersect.push([x, y]);
-  //   }
-  // }
-
-  // console.log(unitMovementGridFinalMapIntersect);
 };
 
 describe("tilemap", () => {
@@ -559,7 +556,7 @@ describe("tilemap", () => {
     await determineMoveTiles(
       map,
       { move: 3, jump: 1, flying: false },
-      { x: 8, y: 5, layer: 0, elevation: 0 },
+      { x: 8, y: 4, layer: 0, elevation: 0 },
     );
   });
 });
