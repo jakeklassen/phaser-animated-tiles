@@ -10,7 +10,9 @@
   "devDependencies": {
     "@types/jest": "^27.0.0",
     "@types/jsdom": "^16.2.13",
+    "@types/lodash": "^4.14.172",
     "canvas": "^2.8.0",
+    "esbuild-node-loader": "^0.1.1",
     "jest": "^27.0.6",
     "jest-extended": "^0.11.5",
     "jsdom": "^16.7.0",
@@ -22,9 +24,11 @@
   },
   "dependencies": {
     "easystarjs": "^0.4.4",
+    "lodash": "^4.17.21",
     "phaser": "^3.55.2",
     "phaser-animated-tiles": "^2.0.2",
     "phaser-tiled-json-external-loader": "^0.1.1",
+    "remove": "^0.1.5",
     "type-fest": "^2.0.0"
   },
   "packageManager": "yarn@3.0.1-rc.2"

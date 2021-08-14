@@ -1,14 +1,9 @@
+import EasyStar from "easystarjs";
+import { isEqual } from "lodash";
 import path from "path";
 import { Merge } from "type-fest";
 import desertTileset from "./fixtures/desert_tileset.json";
 import moveTesting from "./fixtures/move_testing.json";
-
-enum Direction {
-  North = "north",
-  East = "east",
-  South = "south",
-  West = "west",
-}
 
 /**
  * Generate 2d grid of `size` * `size` elements
@@ -72,6 +67,45 @@ const generateMovementGrid = (
   return grid;
 };
 
+const getAdjacentTiles = (
+  grid: number[][],
+  relativeTo: { x: number; y: number },
+) => {
+  const north = grid[relativeTo.y - 1]?.[relativeTo.x];
+  const south = grid[relativeTo.y + 1]?.[relativeTo.x];
+  const east = grid[relativeTo.y]?.[relativeTo.x + 1];
+  const west = grid[relativeTo.y]?.[relativeTo.x - 1];
+
+  return {
+    north: north ? { x: relativeTo.x, y: relativeTo.y - 1 } : undefined,
+    east: east ? { x: relativeTo.x + 1, y: relativeTo.y } : undefined,
+    south: south ? { x: relativeTo.x, y: relativeTo.y + 1 } : undefined,
+    west: west ? { x: relativeTo.x - 1, y: relativeTo.y } : undefined,
+  };
+};
+
+const getAdjacentTilesAsArray = (
+  grid: number[][],
+  relativeTo: { x: number; y: number },
+) =>
+  Object.values(getAdjacentTiles(grid, relativeTo)).filter(
+    (position): position is { x: number; y: number } => position != null,
+  );
+
+const getUniquePaths = (paths: { x: number; y: number }[][]) => {
+  const unique: typeof paths = [];
+
+  for (const potentialPath of paths) {
+    const duplicate = unique.find((path) => isEqual(path, potentialPath));
+
+    if (duplicate == null) {
+      unique.push(potentialPath);
+    }
+  }
+
+  return unique;
+};
+
 // [
 //   [0, 0, 0, 1, 0, 0, 0],
 //   [0, 0, 1, 1, 1, 0, 0],
@@ -83,9 +117,16 @@ const generateMovementGrid = (
 // ];
 console.table(
   generateMovementGrid(3, { x: 9, y: 9 }).map((row) =>
-    row.map((position) => (Array.isArray(position) ? 1 : 0)),
+    row.map((position) => (Array.isArray(position) ? 1 : "")),
   ),
 );
+
+enum Direction {
+  North = "north",
+  East = "east",
+  South = "south",
+  West = "west",
+}
 
 const getDirection = (
   t1: Pick<Position, "x" | "y">,
@@ -129,8 +170,6 @@ const targetTileX = 5;
 const targetTileY = 9;
 const normalizedTargetTileIdx = targetTileX + targetTileY * map.width;
 
-const boardArea = map.width * map.height;
-
 // We only care about layers labeled as `height`
 const heightLayers = map.layers.filter((layer) =>
   layer.properties?.some((property) => property.value === "height"),
@@ -144,6 +183,7 @@ for (const [layerIdx, layer] of heightLayers.entries()) {
   for (const [tileIdx, tileId] of layer.data.entries()) {
     // We are 'shifting' the tile to a normalzed position that would work
     // in a 2d grid, 'not' the way the map is rendered.
+    // Basically tiles that 'appear' in a column, now will be.
     const newIdx = tileIdx + (map.width + 1) * layerIdx;
 
     // Tileid of 0 refers to an empty tile
@@ -196,10 +236,10 @@ const aStarGrids = heightLayersWithGridIndices.map((layer) => {
 
   for (let row = 0; row < map.height; ++row) {
     grid[row] = [];
+    const y = row;
 
     for (let col = 0; col < map.width; ++col) {
       const x = col;
-      const y = row;
       const gridIdx = x + y * map.width;
 
       grid[row][col] = layerTileArray[gridIdx];
@@ -218,6 +258,18 @@ console.log(aStarGrids[2].grid[9][5]);
 console.log(aStarGrids[3].grid[9][5]);
 console.log(aStarGrids[4].grid[9][5]);
 console.log(aStarGrids[5].grid[9][5]);
+
+console.log(aStarGrids[0].grid[5][8]);
+console.log(aStarGrids[1].grid[5][8]);
+console.log(aStarGrids[2].grid[5][8]);
+console.log(aStarGrids[3].grid[5][8]);
+console.log(aStarGrids[4].grid[5][8]);
+console.log(aStarGrids[5].grid[5][8]);
+
+const isColumnEmpty = (
+  grid: typeof aStarGrids,
+  position: { x: number; y: number },
+) => grid.every((layer) => layer.grid[position.y][position.x] === 0);
 
 interface Unit {
   jump: number;
@@ -249,7 +301,7 @@ interface UnitMoveAction {
  * @param startingPosition
  * @returns
  */
-const determineMoveTiles = (
+const determineMoveTiles = async (
   map: Tilemap,
   unit: Unit,
   startingPosition: { x: number; y: number; layer: number; elevation: number },
@@ -353,12 +405,125 @@ const determineMoveTiles = (
     startingPosition,
   ).map((row) =>
     // Truncate positions that fall off the map
-    row
-      .filter((value): value is number[] => Array.isArray(value))
-      .filter(([x, y]) => x >= 0 && x < map.width && y >= 0 && y < map.height),
+    row.map((value) => {
+      if (!Array.isArray(value)) {
+        return value;
+      }
+
+      const [x, y] = value;
+
+      // Convert out of bounds positions to zeros
+      if (x < 0 || x >= map.width || y < 0 || y >= map.height) {
+        return 0;
+      }
+
+      const moveDelta =
+        Math.abs(startingPosition.x - x) + Math.abs(startingPosition.y - y);
+
+      if (moveDelta === unit.move) {
+        return isColumnEmpty(aStarGrids, { x, y }) ? 0 : value;
+      }
+
+      return value;
+    }),
   );
 
+  const aStarMoveable = unitMovementGrid.map((row) =>
+    row.map((cell) => (Array.isArray(cell) ? 1 : 0)),
+  );
+
+  const easystar = new EasyStar.js();
+  easystar.setGrid(aStarMoveable);
+  easystar.setAcceptableTiles([1]);
+
+  console.log(unitMovementGrid);
+
+  const destinationPositions = unitMovementGrid
+    .flat()
+    .filter((value): value is number[] => Array.isArray(value))
+    .filter(
+      ([x, y]) => !(x === startingPosition.x && y === startingPosition.y),
+    );
+
+  const paths = [];
+
+  for (const position of getAdjacentTilesAsArray(aStarMoveable, {
+    x: startingPosition.x - unit.move * 2,
+    y: startingPosition.y - unit.move * 2,
+  })) {
+    console.log({
+      weightedPostition: {
+        x: position.x + unit.move * 2,
+        y: position.y + unit.move * 2,
+      },
+    });
+
+    easystar.setAdditionalPointCost(position.x, position.y, 2);
+
+    for (const [x, y] of destinationPositions) {
+      console.log({
+        startX: startingPosition.x - unit.move * 2,
+        startY: startingPosition.y - unit.move * 2,
+        endX: x - unit.move * 2,
+        endY: y - unit.move * 2,
+      });
+
+      try {
+        const path = await new Promise<{ x: number; y: number }[]>(
+          (resolve, reject) => {
+            easystar.findPath(
+              startingPosition.x - unit.move * 2,
+              startingPosition.y - unit.move * 2,
+              x - unit.move * 2,
+              y - unit.move * 2,
+              (path) => {
+                if (path == null) {
+                  reject("No path found");
+                } else {
+                  resolve(path);
+                }
+              },
+            );
+
+            easystar.calculate();
+          },
+        );
+
+        // Make sure last position in path is not an empty column
+        const lastPosition = path.at(-1);
+
+        if (lastPosition == null) {
+          throw new Error("Error getting last position from path");
+        }
+
+        if (
+          isColumnEmpty(aStarGrids, {
+            x: lastPosition.x + unit.move * 2,
+            y: lastPosition.y + unit.move * 2,
+          })
+        ) {
+          continue;
+        }
+
+        paths.push(
+          path.map(({ x, y }) => ({
+            x: x + unit.move * 2,
+            y: y + unit.move * 2,
+          })),
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    easystar.removeAdditionalPointCost(position.x, position.y);
+  }
+
   console.table(unitMovementGrid);
+  console.table(aStarMoveable);
+
+  const unitPaths = getUniquePaths(paths);
+  console.log(unitPaths);
 
   // const unitMovementGridFinalMapIntersect = [];
 
@@ -389,47 +554,49 @@ const determineMoveTiles = (
   // console.log(unitMovementGridFinalMapIntersect);
 };
 
-const movementTiles = determineMoveTiles(
-  map,
-  { move: 3, jump: 1, flying: false },
-  { x: 9, y: 9, layer: 0, elevation: 0 },
-);
-
-console.log(JSON.stringify(movementTiles, null, 2));
-
-describe("tilemap ", () => {
-  describe("when jump height is 1 (default)", () => {
-    it("should allow me to move to position 28, 29", () => {
-      // What am I standing in?
-      // Subtract that tiles cost from overall move and jump
-
-      const unitMoveAction: UnitMoveAction = {
-        from: {
-          x: 29,
-          y: 29,
-          elevation: 0,
-        },
-        to: { x: 28, y: 29, elevation: 0 },
-        unit: { flying: false, jump: 1, move: 3 },
-      };
-
-      const toPositionIdx =
-        unitMoveAction.to.x + unitMoveAction.to.y * map.width;
-
-      // Assertions:
-      // Is there a tile at 28, 29?
-      // The unit must fit at 28, 29
-      // The tile at 28, 29 must have a height of 1 or less
-
-      expect(1).toBe(1);
-    });
-
-    it.todo("should not allow me jump more than 1 full tiles");
-  });
-
-  describe("when jump height is 2", () => {
-    it.todo("should allow me to jump 2 full tiles");
-
-    it.todo("should not allow me jump more than 2 full tiles");
+describe("tilemap", () => {
+  it("runs", async () => {
+    await determineMoveTiles(
+      map,
+      { move: 3, jump: 1, flying: false },
+      { x: 8, y: 5, layer: 0, elevation: 0 },
+    );
   });
 });
+
+// describe("tilemap ", () => {
+//   describe("when jump height is 1 (default)", () => {
+//     it("should allow me to move to position 28, 29", () => {
+//       // What am I standing in?
+//       // Subtract that tiles cost from overall move and jump
+
+//       const unitMoveAction: UnitMoveAction = {
+//         from: {
+//           x: 29,
+//           y: 29,
+//           elevation: 0,
+//         },
+//         to: { x: 28, y: 29, elevation: 0 },
+//         unit: { flying: false, jump: 1, move: 3 },
+//       };
+
+//       const toPositionIdx =
+//         unitMoveAction.to.x + unitMoveAction.to.y * map.width;
+
+//       // Assertions:
+//       // Is there a tile at 28, 29?
+//       // The unit must fit at 28, 29
+//       // The tile at 28, 29 must have a height of 1 or less
+
+//       expect(1).toBe(1);
+//     });
+
+//     it.todo("should not allow me jump more than 1 full tiles");
+//   });
+
+//   describe("when jump height is 2", () => {
+//     it.todo("should allow me to jump 2 full tiles");
+
+//     it.todo("should not allow me jump more than 2 full tiles");
+//   });
+// });
