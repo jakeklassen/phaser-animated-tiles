@@ -34,12 +34,18 @@ for (const [tilesetIdx] of moveTesting.tilesets.entries()) {
 const map: Tilemap = JSON.parse(JSON.stringify(moveTesting));
 
 /**
- * Generate 2d grid of `size` * `size` elements
+ * Generate 2d grid of `width` * `height` elements
  * @param size
  * @returns
  */
 const generateGrid = (width: number, height: number) => {
-  // TODO width, height validation
+  if (Math.floor(width) !== width || width < 0) {
+    throw new Error("width must be a postive integer");
+  }
+
+  if (Math.floor(height) !== height || height < 0) {
+    throw new Error("height must be a postive integer");
+  }
 
   const grid: number[][] = [];
 
@@ -67,7 +73,10 @@ const generateMovementGrid = (
 ) => {
   const grid: (number | number[])[][] = generateGrid(map.width, map.height);
 
-  // TODO: validate position map bounds
+  if (grid[position.y]?.[position.x] == null) {
+    throw new Error(`position ${position.x}, ${position.y} is out of bounds`);
+  }
+
   grid[position.y][position.x] = [position.x, position.y];
 
   for (let y = 0; y <= move; ++y) {
