@@ -1,0 +1,17 @@
+{
+  "folders": [
+    {
+      "name": "✨ root",
+      "path": "."
+    },
+    {
+      "name": "📦 @srpg/client",
+      "path": "packages/client"
+    },
+    {
+      "name": "📦 @srpg/lib",
+      "path": "packages/lib"
+    },
+  ],
+  "settings": {}
+}
