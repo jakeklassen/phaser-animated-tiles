@@ -45,5 +45,8 @@
   },
   "klap": {
     "example": "public/index.ts"
+  },
+  "dependencies": {
+    "type-fest": "^2.0.0"
   }
 }
