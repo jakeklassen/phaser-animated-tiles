@@ -15,7 +15,7 @@ export const generateMovementGrid = (
   move: number,
   position: { x: number; y: number },
 ) => {
-  const grid: (number | number[])[][] = generateGrid(width, height);
+  const grid: (number | number[])[][] = generateGrid(width, height, 0);
 
   if (grid[position.y]?.[position.x] == null) {
     throw new Error(`position ${position.x}, ${position.y} is out of bounds`);

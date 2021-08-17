@@ -50,15 +50,19 @@ importers:
   packages/lib:
     specifiers:
       '@types/jest': ^27.0.0
+      '@types/lodash': ^4.14.172
       jest: ^27.0.6
       klap: ^7.0.6
+      lodash: ^4.17.21
       ts-jest: ^27.0.4
       type-fest: ^2.0.0
       typescript: ^4.3.5
     dependencies:
+      lodash: 4.17.21
       type-fest: 2.0.0
     devDependencies:
       '@types/jest': 27.0.1
+      '@types/lodash': 4.14.172
       jest: 27.0.6
       klap: 7.0.6
       ts-jest: 27.0.4_92306e36c1a4cf876b1cd4839a977b9c

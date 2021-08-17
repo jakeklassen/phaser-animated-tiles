@@ -1,7 +1,10 @@
-export type Grid2d = number[][];
-export type Grid3d = number[][][];
+export type Grid2d<T> = T[][];
 
-export const generateGrid = (width: number, height: number): Grid2d => {
+export const generateGrid = <T>(
+  width: number,
+  height: number,
+  emptyValue: T,
+): Grid2d<T> => {
   if (Math.floor(width) !== width || width < 0 || width === 0) {
     throw new Error("width must be a postive integer");
   }
@@ -10,13 +13,13 @@ export const generateGrid = (width: number, height: number): Grid2d => {
     throw new Error("height must be a postive integer");
   }
 
-  const grid: number[][] = [];
+  const grid: T[][] = [];
 
   for (let y = 0; y < height; y++) {
     grid[y] = [];
 
     for (let x = 0; x < width; x++) {
-      grid[y][x] = 0;
+      grid[y][x] = emptyValue;
     }
   }
 
