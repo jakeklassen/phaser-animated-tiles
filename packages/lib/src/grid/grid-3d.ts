@@ -14,7 +14,7 @@ export class Grid3d<T> {
     this.#emptyValue = emptyValue;
   }
 
-  public isColumnEmpty(x: number, y: number, z = 0) {
+  public isColumnEmpty(x: number, y: number, z: number) {
     const elevation = this.#grids[z];
 
     if (elevation == null) {

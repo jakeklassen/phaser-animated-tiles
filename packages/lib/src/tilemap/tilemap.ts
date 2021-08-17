@@ -1,78 +1,7 @@
-import TiledMap, {
-  TiledLayerTilelayer,
-  TiledProperty,
-  TiledPropertyAbstract,
-  TiledPropertyType,
-  TiledTile,
-  TiledTileset,
-} from "../@types/tiled";
-
-const hasProperty = <T extends TiledPropertyType>(
-  properties: TiledProperty[],
-  type: T,
-  name: string,
-) => {
-  const property = properties.find(
-    (property) => property.type === type && property.name === name,
-  );
-
-  return property == null ? false : true;
-};
-
-const getProperty = (properties: TiledProperty[], name: string) => {
-  const property = properties.find((property) => property.name === name);
-
-  if (property == null) {
-    throw new Error(`Property ${name} not found`);
-  }
-
-  if (property.type === "bool") {
-    return property.value as boolean;
-  }
-
-  if (property.type === "float" || property.type === "int") {
-    return property.value as number;
-  }
-
-  if (property.type === "string") {
-    return property.value as string;
-  }
-
-  return property.value;
-};
-
-/**
- * Evaluate tiles within tilesets, looking for the smallest `height` on
- * a tile.
- * @param tilesets
- * @returns
- */
-export function determineSmallestTileHeight(tilesets: TiledTileset[]) {
-  return tilesets.reduce((min, tileset) => {
-    if (!Array.isArray(tileset.tiles)) {
-      return min;
-    }
-
-    const tileHeights = tileset.tiles
-      .map((tile) => tile.properties ?? [])
-      .filter((properties) =>
-        properties.filter(
-          (
-            property,
-          ): property is TiledPropertyAbstract<number, "int" | "float"> =>
-            property.name === "height" &&
-            (property.type === "float" || property.type === "int"),
-        ),
-      )
-      .flat()
-      .map((property) => property.value)
-      .filter((value): value is number => !isNaN(+value));
-
-    const smallest = Math.min(...tileHeights);
-
-    return smallest < min ? smallest : min;
-  }, 1);
-}
+import TiledMap, { TiledTile, TiledTileset } from "../@types/tiled";
+import { determineSmallestTileHeight } from "./determine-smallest-tile-height";
+import { generateTileIdMapFromTilesets } from "./generate-tile-id-map-from-tilesets";
+import { getPropertyValue } from "./get-property-value";
 
 export class Tilemap {
   static async load(tiledmap: TiledMap) {
@@ -93,6 +22,8 @@ export class Tilemap {
 
   readonly #tiledmap: TiledMap;
 
+  #tilesById = new Map<TiledTile["id"], TiledTile>();
+
   /**
    * Determined by examining all tileset tiles for a `height` property with
    * the smallest value.
@@ -105,6 +36,7 @@ export class Tilemap {
     const tilesets = tiledmap.tilesets as TiledTileset[];
 
     this.#smallestTileHeight = determineSmallestTileHeight(tilesets);
+    this.#tilesById = generateTileIdMapFromTilesets(tilesets);
   }
 
   /**
@@ -115,83 +47,73 @@ export class Tilemap {
     return this.#smallestTileHeight;
   }
 
-  // TODO: Make this less gross
+  /**
+   * Return layer index associated with this elevation.
+   * @param z Elevation
+   * @returns
+   */
   public getHeightLayerFromZ(z: number) {
-    // TODO: Elevate to class property
-    const tileIdMap = new Map<number, TiledTile>();
-
-    const tilesets = this.#tiledmap.tilesets as TiledTileset[];
-
-    for (const tileset of tilesets) {
-      for (const tile of tileset.tiles ?? []) {
-        // Add 1 to tileset tile id so we get the correct tile id when
-        // comparing layer data and tileset tile ids.
-        tileIdMap.set(tile.id + 1, tile);
-      }
-    }
-
     let heigthAccumulator = 0;
-
     let heightLayerFound = false;
-    return this.#tiledmap.layers.reduce((index, layer, layerIndex) => {
-      // Are we already done?
+    let heightLayerIdx = -1;
+
+    for (const [layerIdx, layer] of this.#tiledmap.layers.entries()) {
       if (heightLayerFound) {
-        return index;
+        break;
       }
 
       if (layer.type !== "tilelayer") {
-        return index;
+        continue;
       }
 
-      if (!hasProperty(layer.properties ?? [], "string", "type")) {
-        return index;
+      if (
+        getPropertyValue(layer.properties ?? [], "string", "type") !== "height"
+      ) {
+        continue;
       }
 
       // `layer.data as number[]` since we're not looking to use base64
       const uniqueTileIds = new Set(layer.data as number[]);
 
+      /**
+       * If layer contains a tile matching `this.#smallestTileHeight`
+       */
       let hasMinTileHeight = false;
 
-      const largestLayerTileHeight = Array.from(uniqueTileIds).reduce(
-        (height, tileId) => {
-          const tile = tileIdMap.get(tileId);
+      let largestLayerTileHeight = 0;
 
-          if (tile == null) {
-            return height;
-          }
+      for (const tileId of uniqueTileIds) {
+        const tile = this.#tilesById.get(tileId);
 
-          const tileHeight = tile.properties?.find(
-            (
-              property,
-            ): property is TiledPropertyAbstract<number, "float" | "int"> =>
-              property.name === "height",
-          )?.value;
+        if (tile == null) {
+          continue;
+        }
 
-          if (tileHeight == null) {
-            console.warn(
-              `Tile with id ${tileId} contains empty height property`,
-            );
+        const tileHeight = getPropertyValue(
+          tile.properties ?? [],
+          "float",
+          "height",
+        );
 
-            return height;
-          }
+        if (tileHeight == null) {
+          console.warn(`Tile with id ${tileId} contains empty height property`);
 
-          if (tileHeight === this.#smallestTileHeight) {
-            hasMinTileHeight = true;
-          }
+          continue;
+        }
 
-          if (tileHeight > height) {
-            height = tileHeight;
-          }
+        if (tileHeight === this.#smallestTileHeight) {
+          hasMinTileHeight = true;
+        }
 
-          return height;
-        },
-        0,
-      );
+        if (tileHeight > largestLayerTileHeight) {
+          largestLayerTileHeight = tileHeight;
+        }
+      }
 
       heigthAccumulator += largestLayerTileHeight;
 
       if (heigthAccumulator === z) {
-        index = layerIndex;
+        heightLayerIdx = layerIdx;
         heightLayerFound = true;
       }
 
@@ -200,10 +122,14 @@ export class Tilemap {
         heigthAccumulator + this.smallestTileHeight >= z
       ) {
         heightLayerFound = true;
-        index = layerIndex;
+        heightLayerIdx = layerIdx;
       }
+    }
 
-      return index;
-    }, 0);
+    if (heightLayerFound) {
+      return this.#tiledmap.layers[heightLayerIdx];
+    }
+
+    // return heightLayerIdx;
   }
 }

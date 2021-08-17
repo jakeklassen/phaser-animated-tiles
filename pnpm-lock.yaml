@@ -19,10 +19,10 @@ importers:
       phaser-tiled-json-external-loader: ^0.1.1
       prettier: ^2.3.2
       remove: ^0.1.5
-      ts-jest: ^27.0.4
+      ts-jest: ^27.0.5
       type-fest: ^2.0.0
       typescript: ^4.3.2
-      vite: ^2.4.4
+      vite: ^2.5.0
       weak-napi: ^2.0.2
     dependencies:
       easystarjs: 0.4.4
@@ -42,9 +42,9 @@ importers:
       jest-extended: 0.11.5
       jsdom: 16.7.0_canvas@2.8.0
       prettier: 2.3.2
-      ts-jest: 27.0.4_92306e36c1a4cf876b1cd4839a977b9c
+      ts-jest: 27.0.5_92306e36c1a4cf876b1cd4839a977b9c
       typescript: 4.3.5
-      vite: 2.4.4
+      vite: 2.5.0
       weak-napi: 2.0.2
 
   packages/lib:
@@ -54,7 +54,7 @@ importers:
       jest: ^27.0.6
       klap: ^7.0.6
       lodash: ^4.17.21
-      ts-jest: ^27.0.4
+      ts-jest: ^27.0.5
       type-fest: ^2.0.0
       typescript: ^4.3.5
     dependencies:
@@ -65,7 +65,7 @@ importers:
       '@types/lodash': 4.14.172
       jest: 27.0.6
       klap: 7.0.6
-      ts-jest: 27.0.4_92306e36c1a4cf876b1cd4839a977b9c
+      ts-jest: 27.0.5_92306e36c1a4cf876b1cd4839a977b9c
       typescript: 4.3.5
 
 packages:
@@ -3909,13 +3909,13 @@ packages:
     resolution: {integrity: sha1-y99WD9e5r2MlAv7UD5GMFX6pcTc=}
     dev: false
 
-  /ts-jest/27.0.4_92306e36c1a4cf876b1cd4839a977b9c:
-    resolution: {integrity: sha512-c4E1ECy9Xz2WGfTMyHbSaArlIva7Wi2p43QOMmCqjSSjHP06KXv+aT+eSY+yZMuqsMi3k7pyGsGj2q5oSl5WfQ==}
+  /ts-jest/27.0.5_92306e36c1a4cf876b1cd4839a977b9c:
+    resolution: {integrity: sha512-lIJApzfTaSSbtlksfFNHkWOzLJuuSm4faFAfo5kvzOiRAuoN4/eKxVJ2zEAho8aecE04qX6K1pAzfH5QHL1/8w==}
     engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
     hasBin: true
     peerDependencies:
       '@babel/core': '>=7.0.0-beta.0 <8'
-      '@types/jest': ^26.0.0
+      '@types/jest': ^27.0.0
       babel-jest: '>=27.0.0 <28'
       jest: ^27.0.0
       typescript: '>=3.8 <5.0'
@@ -3929,14 +3929,12 @@ packages:
     dependencies:
       '@types/jest': 27.0.1
       bs-logger: 0.2.6
-      buffer-from: 1.1.2
       fast-json-stable-stringify: 2.1.0
-      jest: 27.0.6
+      jest: 27.0.6_canvas@2.8.0
       jest-util: 27.0.6
       json5: 2.2.0
       lodash: 4.17.21
       make-error: 1.3.6
-      mkdirp: 1.0.4
       semver: 7.3.5
       typescript: 4.3.5
       yargs-parser: 20.2.9
@@ -4028,9 +4026,9 @@ packages:
       source-map: 0.7.3
     dev: true
 
-  /vite/2.4.4:
-    resolution: {integrity: sha512-m1wK6pFJKmaYA6AeZIUXyiAgUAAJzVXhIMYCdZUpCaFMGps0v0IlNJtbmPvkUhVEyautalajmnW5X6NboUPsnw==}
-    engines: {node: '>=12.0.0'}
+  /vite/2.5.0:
+    resolution: {integrity: sha512-Dn4B+g54PJsMG5WCc4QeFy1ygMXRdTtFrUPegqfk4+vzVQcbF/DqqmI/1bxezArzbujBJg/67QeT5wz8edfJVQ==}
+    engines: {node: '>=12.2.0'}
     hasBin: true
     dependencies:
       esbuild: 0.12.20
