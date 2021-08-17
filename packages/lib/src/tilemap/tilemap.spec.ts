@@ -26,6 +26,8 @@ describe("Tilemap", () => {
   });
 
   it("should return the correct height layer based on z position", () => {
-    console.log(tilemap.getHeightLayerFromZ(5.5));
+    expect(tilemap.getHeightLayerFromZ(5.5)).toBe(10);
+    expect(tilemap.getHeightLayerFromZ(5)).toBe(9);
+    expect(tilemap.getHeightLayerFromZ(4.5)).toBe(8);
   });
 });
