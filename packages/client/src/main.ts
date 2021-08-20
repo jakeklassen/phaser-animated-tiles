@@ -2,9 +2,11 @@ import Phaser, { Tilemaps } from "phaser";
 import registerTiledJSONExternalLoader from "phaser-tiled-json-external-loader";
 // import desertMapEmbeddedTilesetsJsonUrl from "./assets/maps/desert/desert.json";
 import desertMapJsonUrl from "./assets/maps/desert-external-tilesets/tilemap.json?url";
+import desertMapJson from "./assets/maps/desert-external-tilesets/tilemap.json";
 import isoTestTilesetUrl from "./assets/maps/desert-external-tilesets/tileset.png?url";
 import waterTilesetUrl from "./assets/maps/desert-external-tilesets/water.png?url";
 import { AnimatedTiles } from "./plugins/animated-tiles";
+import { generateMovementGrid } from "@srpg/lib";
 
 registerTiledJSONExternalLoader(Phaser);
 
@@ -31,13 +33,13 @@ export default class Demo extends Phaser.Scene {
     const isoTileset = map.addTilesetImage("iso_test", "iso_test", 32, 32);
     const waterTileset = map.addTilesetImage("water", "water", 32, 32);
 
-    map.createLayer("Tile Layer 1", [isoTileset, waterTileset]);
-    map.createLayer("Tile Layer 2", [isoTileset, waterTileset]);
-    map.createLayer("Tile Layer 3", [isoTileset, waterTileset]);
-    map.createLayer("Movement", [isoTileset, waterTileset]);
-    map.createLayer("Cursor", [isoTileset, waterTileset]);
-    map.createLayer("Character", [isoTileset, waterTileset]);
-    map.createLayer("Props", [isoTileset, waterTileset]);
+    for (const layer of desertMapJson.layers) {
+      if (layer.visible === false) {
+        continue;
+      }
+
+      map.createLayer(layer.name, [isoTileset, waterTileset]);
+    }
 
     this.animatedTiles.init(map);
 
@@ -109,7 +111,31 @@ export default class Demo extends Phaser.Scene {
       return newTile;
     };
 
-    map.getLayer("Tile Layer 1").tilemapLayer.putTileAt(23, 4, 4);
+    // map.getLayer("Tile Layer 1").tilemapLayer.putTileAt(23, 0, 0);
+    // console.log(map.getLayer("Tile Layer 1").tilemapLayer.getTileAt(0, 0));
+
+    const movementGrid = generateMovementGrid(map.width, map.height, 3, {
+      x: 15,
+      y: 18,
+    })
+      .flat()
+      .filter(
+        (position): position is [x: number, y: number] =>
+          Array.isArray(position) &&
+          position[0] >= 7 &&
+          position[0] <= 20 &&
+          position[1] >= 9 &&
+          position[1] <= 18,
+      )
+      .filter(
+        (position) => JSON.stringify(position) !== JSON.stringify([15, 18]),
+      );
+
+    console.log(movementGrid);
+
+    for (const [x, y] of movementGrid) {
+      map.getLayer("Movement").tilemapLayer.putTileAt(16, x, y);
+    }
 
     this.cameras.main.zoom = 2;
     this.cameras.main.centerOn(0, 200);
