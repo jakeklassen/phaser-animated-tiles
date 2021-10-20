@@ -21,7 +21,7 @@
          "name":"Movement (8, 4)",
          "opacity":1,
          "type":"tilelayer",
-         "visible":true,
+         "visible":false,
          "width":10,
          "x":0,
          "y":0
@@ -51,7 +51,7 @@
                  "value":"height"
                 }],
          "type":"tilelayer",
-         "visible":false,
+         "visible":true,
          "width":10,
          "x":0,
          "y":0
@@ -81,7 +81,7 @@
                  "value":"height"
                 }],
          "type":"tilelayer",
-         "visible":false,
+         "visible":true,
          "width":10,
          "x":0,
          "y":0
@@ -113,7 +113,7 @@
                  "value":"height"
                 }],
          "type":"tilelayer",
-         "visible":false,
+         "visible":true,
          "width":10,
          "x":0,
          "y":0
@@ -131,7 +131,7 @@
                  "value":"height"
                 }],
          "type":"tilelayer",
-         "visible":false,
+         "visible":true,
          "width":10,
          "x":0,
          "y":0
@@ -149,7 +149,7 @@
                  "value":"height"
                 }],
          "type":"tilelayer",
-         "visible":false,
+         "visible":true,
          "width":10,
          "x":0,
          "y":0
@@ -167,7 +167,7 @@
                  "value":"height"
                 }],
          "type":"tilelayer",
-         "visible":false,
+         "visible":true,
          "width":10,
          "x":0,
          "y":0

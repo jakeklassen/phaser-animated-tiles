@@ -1,0 +1,54 @@
+{
+  "name": "@srpg/lib",
+  "version": "0.0.0",
+  "keywords": [
+    "lib"
+  ],
+  "repository": "Jake Klassen/lib",
+  "license": "MIT",
+  "author": "Jake Klassen <jklassendev@gmail.com>",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "browser": "./dist/lib.js",
+      "import": "./dist/lib.js",
+      "require": "./dist/lib.cjs.js",
+      "umd": "./dist/lib.umd.js"
+    },
+    "./": "./",
+    "./package.json": "./package.json"
+  },
+  "main": "dist/lib.cjs.js",
+  "unpkg": "dist/lib.js",
+  "module": "dist/lib.js",
+  "source": "src/lib.ts",
+  "browser": "dist/lib.umd.js",
+  "types": "dist/lib.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "klap build",
+    "prepublishOnly": "klap build",
+    "start": "klap start",
+    "test": "jest",
+    "watch": "klap watch"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.0.0",
+    "@types/lodash": "^4.14.172",
+    "jest": "^27.0.6",
+    "klap": "^7.0.6",
+    "ts-jest": "^27.0.5",
+    "typescript": "^4.3.5"
+  },
+  "klap": {
+    "example": "public/index.ts"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "type-fest": "^2.0.0"
+  }
+}
